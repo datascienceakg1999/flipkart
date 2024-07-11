@@ -1,0 +1,71 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+import time
+
+# Set up the Selenium WebDriver (adjust the path to your WebDriver)
+driver_path = "path/to/chromedriver"  # Replace with your WebDriver path
+driver = webdriver.Chrome(executable_path=driver_path)
+
+# Define the URL of the page to scrape
+url = "https://www.flipkart.com/search?q=laptops"
+
+# Open the URL
+driver.get(url)
+
+# Scroll to the bottom of the page to load all items
+for _ in range(5):  # Adjust the range for more scrolling
+    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+    time.sleep(2)
+
+# Get the page source and close the driver
+page_source = driver.page_source
+driver.quit()
+
+# Parse the page source with BeautifulSoup
+soup = BeautifulSoup(page_source, 'html.parser')
+
+# Find all the laptop containers
+laptop_containers = soup.find_all('div', {'class': '_1AtVbE'})
+
+# Extract details from each container
+laptops = []
+for container in laptop_containers:
+    try:
+        name = container.find('a', {'class': 'IRpwTa'}).text
+    except AttributeError:
+        name = None
+
+    try:
+        price = container.find('div', {'class': '_30jeq3 _1_WHN1'}).text
+    except AttributeError:
+        price = None
+
+    try:
+        rating = container.find('div', {'class': '_3LWZlK'}).text
+    except AttributeError:
+        rating = None
+
+    specs = []
+    spec_containers = container.find_all('li', {'class': 'rgWa7D'})
+    for spec in spec_containers:
+        specs.append(spec.text)
+
+    if name and price:
+        laptops.append({
+            'name': name,
+            'price': price,
+            'rating': rating,
+            'specs': specs
+        })
+
+# Print the extracted laptop details
+for laptop in laptops:
+    print(f"Name: {laptop['name']}")
+    print(f"Price: {laptop['price']}")
+    print(f"Rating: {laptop.get('rating', 'No rating')}")
+    print("Specifications:")
+    for spec in laptop['specs']:
+        print(f"  - {spec}")
+    print("\n")
